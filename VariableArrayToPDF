@@ -1,0 +1,1674 @@
+#target illustrator
+/*
+Script Name: VariableArrayToPDF 
+scriptVersion: 2.0
+2021.7
+by Dhwart
+
+1. Adjust the document ruler to mm.
+2. Modify the array artboard algorithm.
+3, add PDF file name date judgment (It can be turned on or off at code var DocNameTime = false;).
+*/
+if (app.documents.length > 0) {
+	if (confirm('Please confirm: \n1, whether the template file has imported variable data; \n2, whether all objects have been selected to create group \n\n (hidden data layer must be visible)!', true, 'Export VariableArray to PDF v2.0 - (by Dhwart)    ')) {
+		//Get the current time
+		var myDate = new Date();
+		var year = myDate.getFullYear();
+		var month = myDate.getMonth() + 1;
+		if (month <= 9) month = '0' + month;
+		var day = myDate.getDate();
+		if (day <= 9) day = '0' + day;
+		var hours = myDate.getHours();
+		if (hours <= 9) hours = '0' + hours;
+		var minutes = myDate.getMinutes();
+		if (minutes <= 9) minutes = '0' + minutes;
+		var seconds = myDate.getSeconds();
+		if (seconds <= 9) seconds = '0' + seconds;
+
+		var timeNow = year + '' + month + '' + day + '' + hours + '' + minutes + '' + seconds;
+		////////////////////////////////////////////
+		var doc = app.activeDocument;
+		var sel = doc.selection;
+		var docRef = doc.artboards;
+		
+		var abSp = 5; //Artboard spacing Settings
+		var abSpace = abSp * 72 / 25.4; //Conversion unit mm
+		var savePDFCheck = true; // false  //true //Determine whether to save PDF files
+		var DocNameTime = false; // false  //true //Determine whether the PDF file has added the date and time
+		
+		var folderPath = decodeURI(doc.path);
+		var paths = doc.path == '' ? "Document path: < unknown >": folderPath; 
+		var pdfPaths = paths + "/";
+		var fileName = doc.name;
+		if (DocNameTime == true) {
+			var dest = pdfPaths + fileName.split('.')[0] + "_" + doc.dataSets.length + "p" + "_" + timeNow;
+		} else {
+			var dest = pdfPaths + fileName.split('.')[0] + "_" + doc.dataSets.length + "p";
+		};
+		app.executeMenuCommand('selectallinartboard');
+		app.executeMenuCommand('group'); 
+		
+		datasetMakeup();
+		function datasetMakeup() {
+			var selbounds = doc.groupItems[0].geometricBounds,
+			W = selbounds[2] - selbounds[0],
+			H = selbounds[1] - selbounds[3],
+			g = doc.groupItems[0],d,c,s;
+			var docPreset = new DocumentPreset;
+			docPreset.units = RulerUnits.Millimeters; //New document ruler Unit: mm
+			//docPreset.units = RulerUnits.Points; //New document ruler Unit: pt
+			docPreset.width = W;
+			docPreset.height = H;
+			d = app.documents.addDocument(DocumentColorSpace.CMYK, docPreset);
+			doc.activate();
+			for (s = 0; s < doc.dataSets.length; s++) doc.dataSets[s].display(),
+			c = g.duplicate(),
+			targetLayer = s === 0 ? d.layers[0] : d.layers.add(),
+			targetLayer.zOrder(ZOrderMethod.SENDTOBACK),
+			c.moveToEnd(targetLayer);
+			doc.close(SaveOptions.DONOTSAVECHANGES);
+			app.executeMenuCommand('selectallinartboard');
+			activeDocument.fitArtboardToSelectedArt(activeDocument.artboards.getActiveArtboardIndex());
+			app.executeMenuCommand('ungroup');
+			LayerIntoAB();
+		}
+		
+	}
+
+	function LayerIntoAB() {
+	/* * doEx.jsx：jQuery風にドキュメントのオブジェクトを抽出するかも
+	* Copyright 2010 kamiseto. All Rights Reserved.
+	* http://d.hatena.ne.jp/kamiseto/
+	* 2012-07-06 Illustratorの孤立点をhvgで回すと無限ループに陥るバグを修正
+	*/
+		var debug = false;
+		if (typeof doEx !== 'function' || debug == true) {
+			var _doEx = doEx;
+			var doEx;
+			Function.prototype.curry = function() {
+				var slice = Array.prototype.slice,
+				args = slice.apply(arguments),
+				that = this;
+				return function() {
+					return that.apply(this, args.concat(slice.apply(arguments)));
+				};
+			}; (function() {
+				doEx = function() {
+					return new doEx.prototype.init(Array.prototype.slice.apply(arguments));
+				};
+				doEx.prototype = {
+					'init': function() {
+						this.log = [];
+						this.length = 0;
+						var arg = Array.prototype.slice.apply(arguments)[0];
+						this.log.push('doEX_init : ' + arg.toString());
+
+						for (var i = 0,
+						l = arg.length >>> 0; i < l; i++) {
+							var s = arg[i];
+							try {
+								switch (s.constructor.name) {
+								case 'Object':
+									try {
+										for (var x in s) {
+											this[x](s[x]);
+										}
+									} catch(e) {
+										this.error.push('init_Object_error : ' + e);
+									}
+									break;
+								case 'Function':
+									return doEx(s());
+									break;
+								case 'String':
+									try {
+										if (typeof this.objectShortName[s] == 'string') {
+											s = this.objectShortName[s];
+										}
+										s = app.activeDocument[s];
+										this.add(s);
+									} catch(e) {
+										this.error.push('objectShortName_error : ' + e);
+									}
+									break;
+								case 'Array':
+									this.add(s);
+									break;
+								default:
+									this.add(s);
+								}
+							} catch(e) {
+								this.add(s)
+							}
+						}
+						return this;
+					},
+					'position': 0,
+					'constructor': {
+						'name': "DocumentObjectsExtract"
+					},
+					'add': function(s) {
+						this.log.push('doEX_add : ' + s.toString());
+						var len = this.length >>> 0;
+						try {
+							if (typeof s === 'string') s = doEx(s);
+							if (s.length >>> 0 !== 0) {
+								s = Array.prototype.slice.call(s, 0);
+								for (i = 0; i < s.length >>> 0; i++) {
+									this[len + i] = s[i];
+								}
+								this.length = len + s.length;
+							} else {
+								this[len] = s;
+								this.length = len + 1;
+							}
+						} catch(e) {
+							this[len] = s;
+							this.length++;
+							this.error.push('add_error : ' + e);
+						}
+
+						this.log.push('length:' + this.length);
+
+						return this;
+					},
+					'toArray': function() {
+						return Array.prototype.slice.call(this, 0)
+					},
+					'saveDoc': function(path) {
+						this.each(function() {
+							if (this.constructor.name == 'Document') {
+								this.saveAs(File(path));
+							};
+						});
+						return this;
+					},
+					'get': function(num) {
+						if (typeof num == 'number' && num < this.length && num >= 0) return this[num];
+						return false;
+					},
+					'now': function() {
+						return this.get(this.position);
+					},
+					'next': function() {
+						return this.get(this.position++);
+					},
+					'prev': function() {
+						return this.get(--this.position);
+					},
+					'loop': function() {
+						if (this.position >= this.length) this.position = 0;
+						return this.get(this.position++);
+					},
+					'dofunc': function(func, arg) {
+						if (func == undefined) return this;
+						var res = true;
+						if (func.constructor.name == 'Function') res = func.call(this);
+						if (res) {
+							return this;
+						} else {
+							return {
+								'each': function() {}
+							};
+						};
+					},
+					'each': function(fnc, arg) {
+						var l = this.length >>> 0,
+						i = -1;
+						this.log.push('each : ' + this.toArray().toString());
+						var res = [];
+						if (typeof fnc == 'function') {
+							while (++i < l) {
+								if (i in this) {
+									ret = fnc.call(this[i], this[i], arg, i); (typeof ret != "undefined") && res.push(ret);
+								}
+							}
+						}
+						return res.length > 0 ? doEx(res) : this;
+					},
+					'eachReverse': function(fnc, arg) {
+						var l = this.length;
+						var res = [];
+						if (typeof fnc == 'function') {
+							for (var i = l; i > 0; i--) {
+								ret = fnc.call(this[i - 1], this[i - 1], arg); (typeof ret != "undefined") && res.push(ret);
+							}
+						}
+						if (res.length > 0) {
+							return doEx(res);
+						} else {
+							return this;
+						}
+					},
+					'eachR': function(fnc, arg) {
+						return this.eachReverse(fnc, arg);
+					},
+					'filter': function() {
+						this.log.push('filter : ' + Array.prototype.slice.apply(arguments).toString());
+						if (arguments.length >>> 0 == 0) return this;
+						var s = {
+							'TRUE': [],
+							'FALSE': []
+						};
+						var caseBy = {
+							'function': function(arg) {
+								while (x = this.next()) {
+									arg(x) ? s.TRUE.push(this) : s.FALSE.push(this);
+								};
+							},
+							'string': function(arg) {
+								if (typeof this.objectShortName[arg] == 'string') arg = this.objectShortName[arg];
+								if (typeof this.filters[arg] == 'function') {
+									this.filters[arg].call(this, s);
+								} else {
+									var fd = this.attr(arg).toArray();
+									s['TRUE'] = s['TRUE'].concat(fd);
+								}
+							}
+						};
+						var extractarg = function(args) {
+							for (i = 0; i < args.length; i++) {
+								var arg = args[i];
+								switch (arg.constructor.name) {
+								case 'Function':
+									caseBy['function'].call(this, arg);
+									break;
+								case 'String':
+									var ARG = arg.split(">");
+									for (j = 0; j < ARG.length; j++) {
+										caseBy['string'].call(this, ARG[j]);
+									}
+								};
+							};
+						};
+						extractarg.call(this, arguments);
+						try {
+							if (s.TRUE.length > 0) {
+								return doEx(s.TRUE)
+							} else {
+								var x = doEx();
+								for (i in x) x[i] = false;
+								x.length = 0;
+								return x;
+							};
+						} catch(e) {
+							this.error.push('filter_error : ' + e);
+							return false;
+						}
+					},
+					'find': function(text) {
+						this.log.push('doEX_find : ' + text.toString());
+						try {
+							var ARG = text.split(">");
+							var that = this;
+							for (var i = 0; i < ARG.length; i++) {
+								var SP = ARG[i].split(",");
+								var it = doEx();
+								for (var j = 0; j < SP.length; j++) {
+									it.add(that.attr(SP[j]));
+								}
+								that = it;
+							};
+							this.log.push('doEX_find_return : ' + that.toArray().toString());
+							return that;
+						} catch(e) {
+							this.error.push('find_command_error : ' + text);
+							return this;
+						}
+					},
+					'attr': function(x, y) {
+						var that = this;
+						var it = doEx(that.each(function() {
+							try {
+
+								if (typeof x == 'string' && y !== undefined) {
+									try {
+										if (typeof y == 'string') return this[x] = y;
+										if (typeof y == 'function') {
+											this[x] = y.call(this, this);
+										}
+										if (typeof y == 'boolean') return this[x] = y;
+									} catch(e) {
+										that.error.push('attr_value_set_error ' + e);
+									}
+								}
+
+								if (typeof x == 'object') {
+									for (i in x) {
+										if (this.hasOwnProperty(i)) {
+											try {
+												switch (typeof x[i]) {
+												case 'function':
+													this[i] = x[i].call(this, this);
+													break;
+												default:
+													this[i] = x[i];
+												}
+											} catch(e) {
+												that.error.push('attr_value_error : ' + e);
+											}
+										}
+									}
+								}
+
+								if (typeof x == 'string') {
+									var gx = this[x];
+									try {
+										if (gx.toString() == '') return "";
+										switch (typeof gx) {
+										case 'string':
+											return gx;
+										case 'number':
+											return gx;
+										case 'function':
+											return x + " is function";
+										case 'undefind':
+											return undefined;
+										}
+										if (gx.length) {
+											return app.name.match(/InDe/) ? Array.prototype.slice.call(gx, 0) : Array.prototype.slice.call(gx, 0);
+										} else {
+											return gx;
+										}
+									} catch(e) {
+										that.error('attr_value_error_x : ' + e);
+										return false;
+									}
+								}
+
+								if (!x && !y) {
+									for (i in this) {
+										try {
+											this.hasOwnProperty(i) && $.writeln(i + " : " + this[i]);
+										} catch(e) {
+											that.error.push('attr_value_error : ' + e);
+										};
+									};
+								};
+							} catch(e) {
+								that.error.push('attr_error_ :' + e);
+								return false;
+							};
+						})).toArray();
+						var rt = [];
+						while (r = it.shift()) rt = rt.concat(r);
+						return doEx(rt);
+					},
+					'search': function(x, y) {
+						return doEx(this.each(function() {
+							if (this.hasOwnProperty(x)) {
+								if (typeof this[x] == 'string') {
+									if (this[x] == y) return this
+								}
+								if (typeof this[x] == 'object') {
+									try {
+										if (this[x].constructor.name == y) return this;
+									} catch(e) {}
+								}
+								if (typeof this[x] == 'boolean') {
+									if (this[x] === y) return this;
+								}
+							}
+						}));
+					},
+					'has': function(x, y) {
+						return this.each(function() {
+							if (this[x].toString().match(y)) return this;
+						});
+					},
+					'select': function(x, t) {
+						var wD = new Window('dialog', 'SELECT', [200, 100, 410, 170]);
+						wD.add('statictext', [10, 13, 55, 30], t || 'Select', {});
+						var ActionDDList = wD.add('dropdownlist', [60, 10, 190, 30], {});
+						wD.add('button', [40, 40, 100, 60], "OK");
+						this.each(function() {
+							if (this.constructor.name !== 'String') {
+								ActionDDList.add('item', this[x].toString());
+								return
+							} else {
+								ActionDDList.add('item', this.toString());
+								return
+							}
+						});
+						ActionDDList.selection = ActionDDList.items[0];
+						var result = wD.show();
+						if (result == 2) return doEx(false);
+						return doEx([this[ActionDDList.selection.index]]);
+					},
+					'random': function() {
+						return this[Math.round(Math.random() * (this.length - 1))];
+					},
+
+					'filters': {},
+					'error': [],
+					'temp': [],
+					'log': [],
+
+					'duplicate': function(x, y) {
+						return this.each(function() {
+							return this.duplicate(x, y)
+						})
+					},
+					'translate': function(x, y) {
+						return this.each(function() {
+							this.translate(x, y)
+						})
+					},
+					'type': function() {
+						return this.each(function() {
+							return this.constructor.name
+						})
+					},
+					'debug': function() {
+						this.each(function() {
+							$.bp()
+						})
+					},
+					'remove': function() {
+						this.eachReverse(function() {
+							this.remove()
+						})
+					},
+					'test': function(x, fnc, arg) {
+						typeof fnc == 'function' && fnc.call(this[x], this[x], arg)
+					},
+					'first': function(fnc, arg) {
+						typeof fnc == 'function' && fnc.call(this[0], this[0], arg)
+					},
+					'last': function(fnc, arg) {
+						typeof fnc == 'function' && fnc.call(this[this.length - 1], this[this.length - 1], arg)
+					},
+					'saveLog': function() {},
+					'alertLog': function() {
+						alert(this.log.join('\n'));
+						this.log = [];
+						return this;
+					},
+
+					'alertError': function() {
+						alert(this.error.join('\n'));
+						this.log = [];
+						return this;
+					},
+					'selector': function() {
+
+},
+					'view': function() {
+						var i = 0,
+						that = this,
+						O = {};
+						while (O = that.next()) {
+							var D = myDialogMaker({
+								type: "dialog",
+								title: "DataBrowse",
+								opt: {},
+								pos: [0, 0, 400, 400],
+								layout: [{
+									type: "group",
+									name: "Group",
+									label: "Group",
+									pos: [0, 0, 398, 398],
+									option: {},
+									items: [{
+										type: "edittext",
+										name: "T",
+										label: "",
+										option: {},
+										pos: [16, 13, 386, 35]
+									},
+									{
+										type: "listbox",
+										name: "L",
+										label: "ListBox",
+										pos: [15, 46, 384, 354],
+										option: {
+											onChange: function() {
+												this.selection && this.parent.items["T"].text = this.selection.key + " : " + this.selection.value
+											},
+											onDoubleClick: function() {
+												if (this.selection) {
+													doEx(O[this.selection.key]).view();
+												}
+											}
+										}
+									},
+									{
+										type: "statictext",
+										name: "OT",
+										label: "",
+										pos: [16, 363, 200, 387],
+										option: {}
+									},
+									{
+										type: "button",
+										name: "E",
+										label: "Next",
+										pos: [250, 363, 300, 387],
+										option: {
+											onClick: function() {
+												this.parent.parent.close();
+											}
+										}
+									},
+									{
+										type: "button",
+										name: "E",
+										label: "Close",
+										pos: [320, 363, 387, 387],
+										option: {
+											onClick: function() {
+												this.parent.parent.close(2);
+											}
+										}
+									},
+									{
+										type: "button",
+										name: "E",
+										label: "Load",
+										pos: [200, 363, 250, 387],
+										option: {
+											onDraw: function() {
+												this.parent.items["OT"].text = O.toString() + "[" + i.toString() + "] of " + that.length;
+												var L = this.parent.items["L"];
+												L.removeAll();
+												switch (typeof O) {
+												case 'object':
+													for (v in O) {
+														try {
+															var x = L.add("item", v + " : " + O[v].toString().slice(0, 40));
+															x.key = v;
+															x.value = O[v].toString();
+														} catch(e) {
+															var x = L.add("item", v + " : " + e);
+															x.key = v;
+														}
+													}
+													break;
+												case 'string':
+													var x = L.add("item", O);
+													x.key = 'string';
+													x.value = O;
+													break;
+
+												}
+											}
+										}
+									}]
+								}]
+							});
+							D.wD.center();
+							if (D.wD.show() == 2) break;
+							i++;
+						};
+						return this;
+					},
+					'domselect': function() {
+						var i = 0,
+						that = this,
+						O = {};
+						var sel = [];
+						while (O = that.next()) {
+							var D = myDialogMaker({
+								type: "dialog",
+								title: "DataBrowse",
+								opt: {},
+								pos: [0, 0, 400, 400],
+								layout: [{
+									type: "group",
+									name: "Group",
+									label: "Group",
+									pos: [0, 0, 398, 398],
+									option: {},
+									items: [{
+										type: "edittext",
+										name: "T",
+										label: "",
+										option: {},
+										pos: [16, 13, 386, 35]
+									},
+									{
+										type: "listbox",
+										name: "L",
+										label: "ListBox",
+										pos: [15, 46, 384, 354],
+										option: {
+											onChange: function() {
+												this.selection && this.parent.items["T"].text = this.selection.key + " : " + this.selection.value
+											},
+											onDoubleClick: function() {
+												if (this.selection) {
+													sel = sel.concat(Array.prototype.slice.call(O[this.selection.key], 0));
+													this.parent.parent.close();
+												}
+											}
+										}
+									},
+									{
+										type: "statictext",
+										name: "OT",
+										label: "",
+										pos: [16, 363, 200, 387],
+										option: {}
+									},
+									{
+										type: "button",
+										name: "E",
+										label: "Next",
+										pos: [250, 363, 300, 387],
+										option: {
+											onClick: function() {
+												if (this.selection) {
+													sel = sel.concat(Array.prototype.slice.call(O[this.selection.key], 0));
+												}
+												this.parent.parent.close();
+											}
+										}
+									},
+									{
+										type: "button",
+										name: "E",
+										label: "Close",
+										pos: [320, 363, 387, 387],
+										option: {
+											onClick: function() {
+												this.parent.parent.close(2);
+											}
+										}
+									},
+									{
+										type: "button",
+										name: "E",
+										label: "Load",
+										pos: [200, 363, 250, 387],
+										option: {
+											onDraw: function() {
+												this.parent.items["OT"].text = O.toString() + "[" + i.toString() + "] of " + that.length;
+												var L = this.parent.items["L"];
+												L.removeAll();
+												//alert(typeof O);
+												switch (typeof O) {
+												case 'object':
+													for (v in O) {
+														try {
+															var x = L.add("item", v + " : " + O[v].toString().slice(0, 40));
+															x.key = v;
+															x.value = O[v].toString();
+														} catch(e) {
+															var x = L.add("item", v + " : " + e);
+															x.key = v;
+														}
+													}
+													break;
+												case 'string':
+													var x = L.add("item", O);
+													x.key = 'string';
+													x.value = O;
+													break;
+												}
+											}
+										}
+									}]
+								}]
+							});
+							D.wD.center();
+							if (D.wD.show() == 2) break;
+							i++;
+						};
+						return doEx(sel).view();
+					},
+					'hvg': function(Sc) {
+						if (!Sc) {
+							Sc = 1;
+						} else {
+							Sc = Sc * 1;
+						}
+						if (app.name == 'Adobe Illustrator') {
+							var rulerOrigin_Original = app.activeDocument.rulerOrigin;
+							app.activeDocument.rulerOrigin = [ - 9600, -9600];
+						};
+						var hvgObject = {
+							'group': [],
+							p_x: 0,
+							p_y: 0,
+							'getItem': function(y, x) {
+								try {
+									return this.group[y][x];
+								} catch(e) {
+									return false;
+								};
+							},
+							'loop': function() {
+								var N = this.next();
+								if (N === false) {
+									this.p_x = 0;
+									this.p_y = 0;
+									N = this.next();
+
+								}
+								return N;
+							},
+							'next': function() {
+								if (this.group[this.p_y].length > this.p_x) {
+									var get = this.getItem(this.p_y, this.p_x);
+									this.p_x++;
+								} else {
+									this.p_y++;
+									this.p_x = 0;
+									if (this.group.length > this.p_y) {
+										var get = this.getItem(this.p_y, this.p_x);
+										this.p_x++;
+									} else {
+										return false;
+									};
+								};
+								if (get.toString() == "[object Object]") get = this.next();
+								return get;
+							},
+							'rotate': function() {
+								var temp = [];
+								for (var i = 0; i < hvgObject.group.length; i++) {
+									hvgObject.group[i].reverse();
+									for (var j = 0; j < hvgObject.group[i].length; j++) {
+										if (!temp[j]) {
+											temp.push([])
+										};
+										temp[j].push(hvgObject.group[i][j]);
+									}
+								}
+								hvgObject.group = temp;
+								return this;
+							},
+							'reverse': function() {
+								var temp = [];
+								for (var i = 0; i < hvgObject.group.length; i++) {
+									hvgObject.group[i].reverse();
+								}
+								return this;
+							},
+							'order': function(A) {
+								var temp = [];
+								if (A == undefined) A = (function() {
+									var o = "Z",
+									r = "1";
+									var D = myDialogMaker({
+										type: "dialog",
+										title: "Get selection order",
+										opt: {},
+										pos: [0, 0, 200, 150],
+										layout: [({
+											pos: [0, 0, 200, 150],
+											type: "group",
+											name: "Group",
+											option: {},
+											items: [({
+												pos: [7, 8, 192, 55],
+												type: "panel",
+												name: "X",
+												option: {},
+												items: [({
+													type: "radiobutton",
+													name: "N",
+													label: "N",
+													option: {},
+													pos: [9, 20, 91, 33]
+												}), ({
+													type: "radiobutton",
+													name: "Z",
+													label: "Z",
+													option: {
+														value: true
+													},
+													pos: [95, 20, 177, 33]
+												})],
+												label: "Processing direction"
+											}), ({
+												pos: [7, 62, 192, 141],
+												type: "panel",
+												name: "Y",
+												option: {},
+												items: [({
+													type: "radiobutton",
+													name: "LT",
+													label: "Upper left",
+													option: {
+														value: true
+													},
+													pos: [7, 21, 89, 34]
+												}), ({
+													type: "radiobutton",
+													name: "RT",
+													label: "upper right",
+													option: {},
+													pos: [95, 21, 177, 34]
+												}), ({
+													type: "radiobutton",
+													name: "LB",
+													label: "lower left",
+													option: {},
+													pos: [7, 53, 89, 66]
+												}), ({
+													type: "radiobutton",
+													name: "RB",
+													label: "lower right",
+													option: {},
+													pos: [95, 53, 177, 66]
+												})],
+												label: "starting position"
+											})],
+											label: "Group"
+										})]
+									});
+									D.wD.center();
+									D.wD.show();
+									if (D.items['Group'].items["X"].items['N'].value) {
+										o = "N";
+									}
+									if (D.items['Group'].items["Y"].items['LT'].value) r = "1";
+									if (D.items['Group'].items["Y"].items['RT'].value) r = "2";
+									if (D.items['Group'].items["Y"].items['RB'].value) r = "3";
+									if (D.items['Group'].items["Y"].items['LB'].value) r = "4";
+									return o + r;
+								})();
+								var that = this;
+								var doing = {
+									'N2': function() {
+										return that.rotate()
+									},
+									'N3': function() {
+										return that.rotate().reverse()
+									},
+									'N1': function() {
+										return that.reverse().rotate()
+									},
+									'N4': function() {
+										return that.reverse().rotate().reverse()
+									},
+									'Z1': function() {
+										return that
+									},
+									'Z2': function() {
+										return that.reverse()
+									},
+									'Z3': function() {
+										return that.rotate().rotate()
+									},
+									'Z4': function() {
+										return that.rotate().rotate().reverse()
+									}
+								}
+								return doing[A]();
+							},
+							'each': function(fnc, args) {
+								var i;
+								if (typeof fnc == 'function') while (i = this.next()) fnc.call(i, i, args);
+								this.p_x = 0;
+								this.p_y = 0;
+								return this;
+							},
+							'getRows': function() {
+								return doEx(this.group);
+							},
+							'getAll': function() {
+								var o = [];
+								while (i = this.next()) o.push(i);
+								return o;
+							},
+							'doEx': function() {
+								this.p_x = 0;
+								this.p_y = 0;
+								return doEx(this.getAll());
+							},
+							'toArray': function() {
+								return this.getAll();
+							},
+							'view': function() {
+								var x = this.group;
+								var p = [];
+								for (var i = 0; i < x.length; i++) {
+									var v = [];
+									for (var j = 0; j < x[i].length; j++) {
+										v.push(x[i][j].toString() !== "[object Object]" ? "■": "□");
+									}
+									p.push(v.join(""));
+								};
+								alert("Identify the shape of the arrangement\n" + p.join("\n"));
+								return this;
+							},
+							'console': function() {
+								var x = this.group;
+								var p = [];
+								for (var i = 0; i < x.length; i++) {
+									var v = [];
+									for (var j = 0; j < x[i].length; j++) {
+										v.push(x[i][j].toString() !== "[object Object]" ? "■": "□");
+									}
+									p.push(v.join(""));
+								};
+								$.writeln("Identify the shape of the arrangement\n" + p.join("\n"));
+								return this;
+							}
+						};
+						var orderFunc = {
+							o: function(a, b) {
+								return a.geometricBounds[0] - b.geometricBounds[0];
+							},
+							g: function(a, b) {
+								return b['n'] - a['n'];
+							},
+							h: function(x) {
+								return Math.abs(x.geometricBounds[1] - x.geometricBounds[3]);
+							},
+							c: function(x) {
+								var z = (x.visibleBounds[3] + x.visibleBounds[1]) / 2;
+								return z;
+							}
+						};
+						var hl = 0;
+						this.each(function() {
+							try {
+								if (this.hasOwnProperty("geometricBounds")) {
+									var h = orderFunc.h(this);
+									if (h == 0) h = 0.1;
+									hl += h;
+								}
+							} catch(e) {};
+						});
+						hl = hl / this.length;
+						var group = [];
+						this.each(function() {
+							try {
+								if (!this.hasOwnProperty("geometricBounds")) return;
+								var ic = orderFunc.c(this);
+								for (var i = 0; i < group.length; i++) {
+									if (Math.abs(ic - group[i].n) < hl * Sc) {
+										group[i].item.push(this);
+										return;
+									}
+								}
+								group.push({
+									n: ic,
+									item: [this]
+								});
+								return;
+							} catch(e) {
+								return e;
+							}
+
+						});
+						var temp = [];
+						group = group.sort(orderFunc.g);
+
+						for (var i = 0; i < group.length; i++) {
+							temp.push(group[i].item.sort(orderFunc.o))
+						};
+						var getCol = function() {
+							var temp2 = [];
+							var col = [];
+							for (var i = 0; i < temp.length; i++) {
+								var wl = {};
+								try {
+									wl = temp[i].shift();
+									col.push(wl);
+								} catch(e) {
+									col.push(wl);
+								};
+							};
+							var cl = 0;
+							var ml = undefined;
+							for (var i = 0; i < col.length; i++) {
+								try {
+									if (!ml) {
+										ml = col[i].visibleBounds[0];
+										cl = Math.abs((col[i].visibleBounds[2] + col[i].visibleBounds[0]) / 2);
+									}
+									if (col[i].visibleBounds[0] < ml) {
+										ml = col[i].visibleBounds[0];
+										cl = Math.abs((col[i].visibleBounds[2] + col[i].visibleBounds[0]) / 2);
+									}
+								} catch(e) {};
+							}
+							for (i = 0; i < col.length; i++) {
+								try {
+									if (Math.abs((col[i].visibleBounds[2] + col[i].visibleBounds[0]) / 2 - cl) < (Math.abs((col[i].visibleBounds[2] - col[i].visibleBounds[0])))) {
+										temp2.push(col[i]);
+									} else {
+										if (col[i].visibleBounds[2] == col[i].visibleBounds[0]) {
+											temp2.push(col[i]);
+										} else {
+											temp2.push({});
+											temp[i].unshift(col[i]);
+										}
+									};
+								} catch(e) {
+									temp2.push({});
+								};
+
+							};
+
+							return temp2;
+						};
+						var getL = function() {
+							var l = 0;
+							try {
+								for (var i = 0; i < temp.length; i++) {
+									l += temp[i].length
+								};
+							} catch(e) {};
+							return l;
+						};
+						var temp3 = [];
+						while (getL()) {
+							temp3.push(getCol());
+						}
+						var temp4 = [];
+						for (var i = 0; i < temp3.length; i++) {
+							for (var j = 0; j < temp3[i].length; j++) {
+								if (!temp4[j]) temp4.push([]);
+								temp4[j].push(temp3[i][j]);
+							}
+						}
+						hvgObject.group = temp4;
+						if (app.name == 'Adobe Illustrator') app.activeDocument.rulerOrigin = rulerOrigin_Original;
+						return hvgObject;
+					},
+
+					'isPlural': function() {
+						var pluralWords = ['ArtStyles', 'Artboards', 'Brushes', 'CharacterStyles', 'Characters', 'CompoundPathItems', 'DataSets', 'Documents', 'GradientStops', 'GraphItems', 'GroupItems', 'InsertionPoints', 'Layers', 'LegacyTextItems', 'Lines', 'MashItems', 'NonNativeItems', 'PageItems', 'ParagraphStyles', 'PathItems', 'PathPoints', 'Patterns', 'PlacedItems', 'PluginItems', 'RasterItems', 'Spots', 'Stories', 'Swatches', 'SymbolItems', 'Symbols', 'Tags', 'TextFonts', 'TextFrameItems', 'TextRanges', 'Variables', 'Views', 'Words'];
+					}
+				};
+
+				doEx.extend = function(target, source) {
+					for (var property in source) {
+						try {
+							target.prototype[property] = source[property];
+						} catch(e) {
+							target[property] = source[property];
+						};
+					}
+					return target;
+				}
+
+				doEx.prototype.init.prototype = doEx.prototype;
+
+				function getObjextX(objectType) {
+					var X = [];
+					for (x = 0; x < app.activeDocument.layers.length; x++) {
+						X.concat(Array.prototype.slice.call(app.activeDocument.layers[x][objectType], 0));
+					};
+					return doEx(X);
+				};
+				doEx.extend(doEx, {
+					concat: Array.prototype.concat
+				});
+				doEx.view = function() {
+					doEx(app.activeDocument).view();
+				};
+				doEx.selector = function() {
+					var select = prompt("What", "selection");
+					return doEx(select);
+				}
+
+				if (app.name == 'Adobe Illustrator') {
+					//
+					//for Illustrator 
+					var config_for_illustrator = {
+						'selected': function() {
+							this.each(function() {
+								'selected' in this && this.selected = true;
+							});
+							return this;
+						},
+						'deselected': function() {
+							this.each(function() {
+								'selected' in this && this.selected = false;
+							});
+							return this;
+						},
+						'filters': {
+							'ParentisLayer': function(s) {
+								this.each(function() {
+									if (this.parent.constructor.name == 'Layer') s.TRUE.push(this)
+								});
+								return s;
+							},
+							'layers': function(s) {
+								this.each(function() {
+									this.constructor.name.match(/Document|Layer/) && doEx(this.layers).each(function() {
+										s.TRUE.push(this);
+									});
+								});
+								return s;
+							},
+							'placedItems': function(s) {
+								this.each(function(a) {
+									a.constructor.name == 'PlacedItem' ? s.TRUE.push(a) : (a.constructor.name == 'GroupItem' ? doEx(a.pageItems).each(arguments.callee) : s.FALSE.push(a));
+								});
+								return s;
+							},
+							'rasterItems': function(s) {
+								this.each(function(a) {
+									a.constructor.name == 'RasterItem' ? s.TRUE.push(a) : (a.constructor.name == 'GroupItem' ? doEx(a.pageItems).each(arguments.callee) : s.FALSE.push(a));
+								});
+								return s;
+							},
+							'pathItems': function(s) {
+								this.each(function(a) {
+									a.constructor.name == 'PathItem' ? s.TRUE.push(a) : (a.constructor.name.match(/CompoundPathItem|GroupItem/) ? doEx(a.constructor.name == "GroupItem" ? a.pageItems: a.pathItems).each(arguments.callee) : s.FALSE.push(a))
+								});
+								return s;
+							},
+							'compoundPathItems': function(s) {
+								this.each(function(a) {
+									a.constructor.name == 'CompoundPathItem' ? s.TRUE.push(a) : (a.constructor.name == 'GroupItem' ? doEx(a.pageItems).each(arguments.callee) : s.FALSE.push(a));
+								});
+								return s;
+							},
+							'pathPoints': function(s) {
+								this.filter('pathItems').each(function() {
+									s['TRUE'] = s.TRUE.concat(Array.prototype.slice.call(this.pathPoints, 0))
+								});
+								return s;
+							},
+							'groupItems': function(s) {
+								this.each(function() {
+									if (this.constructor.name == 'GroupItem') {
+										s.TRUE.push(this);
+									} else {
+										if (this.constructor.name.match(/Document|Layer/)) {
+											doEx(this.groupItems).each(function() {
+												if (this.parent.constructor.name == 'Layer') s.TRUE.push(this);
+											});
+										}
+									}
+								});
+								return s;
+							},
+							'textFrames': function(s) {
+								this.each(function(a) {
+									a.constructor.name == 'TextFrame' ? s.TRUE.push(a) : (a.constructor.name == 'GroupItem' ? doEx(a.pageItems).each(arguments.callee) : s.FALSE.push(a));
+								});
+								return s;
+							},
+							'textRanges': function(s) {
+								this.each(function() {
+									if (this.constructor.name == 'TextRange') {
+										s.TRUE.push(this);
+										return;
+									}
+									this.constructor.name.match(/TextFrame|Story/) && doEx(this.textRanges).each(function(tr) {
+										s.TRUE.push(tr)
+									});
+								});
+								return s;
+							},
+							'selection': function(s) {
+								this.each(function() { (this.selected == true || this.selected == 'PathPointSelection.ANCHORPOINT') ? s.TRUE.push(this) : s.FALSE.push(this);
+								});
+								return s;
+							}
+						},
+						'objectShortName': {
+							"I": 'allPageItems',
+							"T": 'textFrames',
+							"G": 'groupItems',
+							"P": 'pathItems',
+							"PP": 'pathPoints',
+							"S": 'selection',
+							"PL": 'placedItems',
+							"L": 'layers',
+							"R": 'rasterItems',
+						}
+					}
+					doEx.extend(doEx, config_for_illustrator);
+					for (var i in config_for_illustrator.filters) {
+						doEx.prototype[i] = doEx.prototype.filter.curry(i);
+					};
+				};
+
+			})();
+
+			var myDialogMaker; (function() {
+				var setPosition = function(a, b) {
+					return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
+				};
+				extend = function(target, source) {
+					try {
+						for (var property in source) {
+							try {
+								target.prototype[property] = source[property];
+							} catch(e) {
+								target[property] = source[property];
+							};
+						};
+					} catch(e) {};
+					return target;
+				}
+				myDialogMaker = function(option) {
+					return new myDialogMaker.prototype.init(option);
+				};
+				myDialogMaker.prototype = {
+					'init': function(option) {
+						if (!option) {
+							var F = File.openDialog();
+							F.open("r");
+							eval("option = " + F.read());
+							F.close();
+						}
+						if (File(option).exists) {
+							var F = File(option);
+							F.open("r");
+							eval("option =" + F.read());
+							F.close();
+						}
+						this.wD = new Window(option['type'], option['title'], option['pos'], option['properties']);
+						extend(this.wD, option['option']);
+						option['layout'].length > 0 && this.items = this.buildLayout(this.wD, option['layout']);
+						return this;
+					},
+					'dialog': function(wD, pos, Config) {
+						var D = new Window('dialog', Config['label'], Config['pos'], Config['option']);
+						try {
+							Config['layout'].length > 0 && D.items = this.buildLayout(D, Config['layout']);
+						} catch(e) {
+
+}
+						D.parents = wD;
+						return D;
+					},
+					'statictext': function(wD, pos, Config) {
+						var sT = wD.add('statictext', pos, Config['label'], {});
+						return sT;
+					},
+					'edittext': function(wD, pos, Config) {
+						if (Config['width'] && Config['height'] && Config['size']) {
+							if (Config['label']) var sT = this.statictext(wD, setPosition([0, 3, Config['width'] - (Config['size'] * 10), 20], pos), Config);
+							var sET = wD.add(Config['type'], setPosition([Config['width'] - (Config['size'] * 10), 0, Config['width'], Config['height']], pos), Config['default'], {
+								name: Config['name']
+							});
+						} else {
+							var Size = 0;
+							if (Config['label']) {
+								Size = Config['label'].length;
+								var sT = this.statictext(wD, [pos[0], pos[1], pos[0] * 1 + Size * 10, pos[3]], Config);
+							}
+							var sET = wD.add(Config['type'], [pos[0] * 1 + Size * 10, pos[1], pos[2], pos[3]], Config['default'], Config['option']);
+						}
+						extend(sET, Config['option']);
+						return sET;
+					},
+					'checkbox': function(wD, pos, Config) {
+						var cB = wD.add('checkbox', [pos[0], pos[1], pos[2] * 1 + Config['label'].length * 10, pos[3]], Config['label']);
+						extend(cB, Config['option']);
+						return cB;
+					},
+					'checkboxies': function(wD, pos, Config) {
+						var GP = wD.add('group', pos, Config['label']);
+						switch (typeof Config['list']) {
+						case 'object':
+							for (var x in Config['list']) {
+								this.checkbox(GP, checkpos, Config['list'][x]);
+							}
+							break;
+						}
+						return GP;
+					},
+					'radiobutton': function(wD, pos, Config) {
+						var RB = wD.add('radiobutton', pos, Config['label']);
+						extend(RB, Config['option']);
+						return RB;
+					},
+					'button': function(wD, pos, Config) {
+						var bT = wD.add('button', pos, Config['label'], {
+							name: Config['name']
+						});
+						extend(bT, Config['option']);
+						return bT;
+					},
+					'iconbutton': function(wD, pos, Config) {
+						try {
+							var SI = ScriptUI.newImage(Config['label']);
+							var iB = wD.add('iconbutton', pos, SI);
+							extend(iB, Config['option']);
+							return iB
+						} catch(e) {
+							return this.button(wD, pos, Config);
+						}
+					},
+					'dropdownlist': function(wD, pos, Config) {
+						var ddl = wD.add('dropdownlist', pos);
+						Config['list'] && this.addListItems(ddl, Config['list']);
+						ddl.selection = ddl.items[0];
+						extend(ddl, Config['option']);
+						return ddl;
+					},
+					'treeview': function(wD, pos, Config) {
+						var TB = wD.add('treeview', pos, '');
+						Config['list'] && this.addListItems(TB, Config['list']);
+						extend(TB, Config['option']);
+						return TB;
+					},
+					'listbox': function(wD, pos, Config) {
+						var TB = wD.add('listbox', pos, "", Config['option']);
+						Config['list'] && this.addListItems(TB, Config['list']);
+						extend(TB, Config['option']);
+						return TB;
+					},
+					'flashplayer': function(wD, pos, Config) {
+						var FP = wD.add('flashplayer', pos);
+						extend(FP, Config['option']);
+						return FP;
+
+					},
+					'progressbar': function(wD, pos, Config) {
+						var PB = wD.add('progressbar', pos);
+						extend(PB, Config['option']);
+						return PB;
+
+					},
+					'addListItems': function(TG, LIST) {
+						//$.bp();
+						switch (LIST.constructor.name) {
+						case 'Function':
+							LIST(TG);
+							break;
+						case 'Array':
+							for (var x in LIST) {
+								TG.add('item', LIST[x]);
+							}
+							break;
+						case 'Object':
+							for (var x in LIST) {
+								TG.add('item', x);
+							}
+							break;
+						}
+					},
+					'slider': function(wD, pos, Config) {
+						var SL = wD.add('slider', pos, '');
+						extend(SL, Config['option']);
+						return SL;
+					},
+					'group': function(wD, pos, Config) {
+						var GP = wD.add('group', pos, Config['label']);
+						GP.items = this.buildLayout(GP, Config['items']);
+						extend(GP, Config['option']);
+						return GP;
+					},
+					'panel': function(wD, pos, Config) {
+						var GP = wD.add('panel', pos, Config['label']);
+						GP.items = this.buildLayout(GP, Config['items']);
+						extend(GP, Config['option']);
+						return GP;
+					},
+					'save': function() {},
+					'items': {},
+					'getItem': function(name) {
+						return this.items.hasOwnProperty(name) ? this.items[name] : false;
+					},
+					'temp': {},
+					'buildLayout': function(wD, layout) {
+						var layout_L = layout.length;
+						var myitems = {};
+						for (var xi = 0; xi < layout_L; xi++) {
+							var ret = myDialogMaker.prototype[layout[xi]['type']](wD, layout[xi]['pos'], layout[xi]);
+							layout[xi].hasOwnProperty('name') && typeof layout[xi]['name'] == 'string' && myitems[layout[xi]['name']] = ret;
+						}
+						return myitems;
+					},
+					'showLayout': function() {
+						var m = function(i) {
+							var z = []
+							for (x in i) {
+								try {
+									z.push(x);
+									if (i[x]) x = m(i[x].items);
+								} catch(e) {}
+								z.push(x);
+							}
+							return z;
+						}
+						alert(m(this.items).toSource());
+					}
+				};
+				myDialogMaker.prototype.init.prototype = myDialogMaker.prototype;
+			})();
+			var buildDialogLayout = myDialogMaker.prototype.buildLayout;
+			var addListItems = myDialogMaker.prototype.addListItems;
+			var MDM = myDialogMaker;
+			var MDME = function(skin, event) {
+				var ui = MDM(skin);
+				if (!event) {
+					var F = File.openDialog();
+					F.open("r");
+					eval("event = " + F.read());
+					F.close();
+				}
+				if (File(event).exists) {
+					var F = File(event);
+					F.open("r");
+					eval("event =" + F.read());
+					F.close();
+				}
+				for (i in event) {
+					doEx.extend(ui.items['Group'].items[i], event[i]);
+				}
+				return ui;
+			}
+
+/*
+   ScriptUI Functions
+ */
+			function setFont(o, f, t, s) {
+				var g = o.graphics;
+				var FontStyle = {
+					REGULAR: ScriptUI.FontStyle.REGULAR,
+					BOLD: ScriptUI.FontStyle.BOLD,
+					ITALIC: ScriptUI.FontStyle.ITALIC,
+					BOLDITALIC: ScriptUI.FontStyle.BOLDITALIC
+				}
+				g.font = ScriptUI.newFont(f, FontStyle[t] || ScriptUI.FontStyle.REGULAR, s);
+			}
+			function setFontStyle(o, f, t, s, pt, c, w) {
+				setFont(o, f, t, s);
+				setFGC(o, pt, c, w);
+			}
+			function setFGC(o, t, c, w) {
+				try {
+					var g = o.graphics;
+					g.foregroundColor = g.newPen(g.PenType.SOLID_COLOR, c, w || 1);
+				} catch(e) {}
+			}
+
+			function setBGC(o, t, c) {
+				try {
+					var g = o.graphics;
+					g.backgroundColor = g.newBrush(g.BrushType.SOLID_COLOR, c);
+				} catch(e) {}
+			}
+
+			function drawRact(target, rac) {
+				var x = 0,
+				y = 0,
+				z = {};
+				try {
+					target.graphics.newPath();
+					target.graphics.rectPath(rac[0], rac[1], rac[2], rac[3]);
+					z = target.graphics.newBrush(target.graphics.BrushType.SOLID_COLOR, [rac[4][0], rac[4][1], rac[4][2], 1]);
+					target.graphics.fillPath(z);
+				} catch(e) {
+					$.writeln("drawRact : " + e);
+				}
+
+			};
+
+			function drawRactData(target, racdata) {
+				var x = 0,
+				y = 0,
+				z = {},
+				rac = {};
+				try {
+					for (i = 0; i < racdata.length; i++) {
+						rac = racdata[i];
+						target.graphics.newPath();
+						target.graphics.rectPath(rac[0], rac[1], rac[2], rac[3]);
+						z = target.graphics.newBrush(target.graphics.BrushType.SOLID_COLOR, [rac[4][0], rac[4][1], rac[4][2], 1]);
+						target.graphics.fillPath(z);
+					}
+				} catch(e) {
+					$.writeln("drawRact : " + e);
+				}
+			};
+
+			function drawText(target, t, point) {
+				var x = 0,
+				y = 0;
+				try {
+					x = typeof point[0] == 'number' ? point[0] : 0;
+					y = typeof point[1] == 'number' ? point[1] : 0;
+				} catch(e) {
+					$.writeln(e);
+				}
+
+				try {
+					target.graphics.drawString(t.text, target.graphics.newPen(target.graphics.PenType.SOLID_COLOR, [t.color[0], t.color[1], t.color[2], t.color[3]], 1), x, y, target.graphics.font);
+				} catch(e) {
+					$.writeln(e);
+				}
+			}
+			//DrawMosaicPict
+			//target :
+			//picData :
+			function drawMosaicPict(target, picData, point) {
+				var decodeFromCharCode = function(s) {
+					var z = [];
+					for (var i = 0,
+					l = s.length; i < l;) {
+						z.push((s.slice(i, ++i).charCodeAt(0) - 255) / 100);
+					}
+					return z;
+				}
+				var px = 0,
+				py = 0;
+				try {
+					px = typeof point[0] == 'number' ? point[0] : 0;
+					py = typeof point[1] == 'number' ? point[1] : 0;
+				} catch(e) {
+
+}
+				try {
+					var r = g = b = 0,
+					z = {};
+					if (typeof picData.data == "string") {
+						picData.data = decodeFromCharCode(picData.data);
+					}
+					for (var i = 0; i < picData.height; i++) {
+						for (var j = 0; j < picData.width; j++) {
+							target.graphics.newPath();
+							target.graphics.rectPath((j * picData.pictsize + px), (i * picData.pictsize + py), picData.pictsize, picData.pictsize);
+
+							if (picData.type == 'mono') {
+								r = g = b = picData.data[i * picData.width + j];
+							} else {
+								r = picData.data.r[i * picData.width + j];
+								g = picData.data.g[i * picData.width + j];
+								b = picData.data.b[i * picData.width + j];
+							};
+
+							z = target.graphics.newBrush(target.graphics.BrushType.SOLID_COLOR, [r, g, b, 1]);
+							target.graphics.fillPath(z);
+						}
+					}
+				} catch(ex) {
+					$.writeln("xxx : " + ex);
+				}
+			};
+			//MosaicButton
+			function MosaicButton(targetButtom, mozpic) {
+				targetButtom.onDraw = function() {
+					drawMosaicPict(this, mozpic.normal, mozpic.point)
+				}
+				try {
+					if (mozpic.mouseover) {
+						targetButtom.addEventListener("mouseover",
+						function(e) {
+							e.target.onDraw = function() {
+								drawMosaicPict(this, mozpic.mouseover, mozpic.point)
+							};
+							e.target.notify('onDraw');
+						},
+						false);
+						targetButtom.addEventListener("mouseout",
+						function(e) {
+							e.target.onDraw = function() {
+								drawMosaicPict(this, mozpic.normal, mozpic.point)
+							};
+							e.target.notify('onDraw');
+						},
+						false);
+					}
+				} catch(e) {
+
+}
+			}
+		} else {
+
+}
+//end
+		var doc = app.activeDocument;
+		doc.rulerOrigin = [0, 0];
+		var docRef = doc.artboards;
+		var numberAB = docRef.length;
+		var layerL = doc.layers.length;
+		var tempXY = -7000;
+		for (var i = 1; i < layerL; i++) {
+			for (var j = 0; j < numberAB; j++) {
+				var activeArtboard = docRef[j];
+				docRef.setActiveArtboardIndex(j);
+				try {
+					var newAB = docRef.add(activeArtboard.artboardRect);
+					newAB.artboardRect = [tempXY, tempXY, tempXY + (activeArtboard.artboardRect[2] - activeArtboard.artboardRect[0]), tempXY + (activeArtboard.artboardRect[3] - activeArtboard.artboardRect[1])];
+				} catch(err) {
+					alert("Mistake!! \n The total size of the object is too large to array on the artboard, \n please adjust the data or template.", "Error message");
+					var abBound = doc.groupItems[0].geometricBounds; //visibleBounds;
+					docRef[0].artboardRect = [abBound[0], abBound[1], abBound[2], abBound[3]];
+					return;
+				}
+			}
+			doc.rearrangeArtboards(DocumentArtboardLayout.GridByRow, Math.ceil(Math.sqrt(layerL)), abSpace, false);
+		}
+		var abArr = [];
+		doEx("artboards").each(function() {
+			abArr.push([this.artboardRect[0], this.artboardRect[3]])
+		});
+		var i = 0;
+		doEx("layers").each(function() {
+			this.locked = false;
+			this.visible = true;
+			this.hasSelectedArtwork = true;
+			doEx("selection").each(function() {
+				this.top += abArr[i][1];
+				this.left += abArr[i][0]
+			});
+			app.executeMenuCommand('group'); 
+			doc.selection = null;
+			i++;
+		});
+		if (savePDFCheck == true) {
+			saveFileToPDF(dest);
+		};
+	}
+
+	function saveFileToPDF(dest) {
+		var saveName = new File(dest);
+		saveOpts = new PDFSaveOptions();
+		saveOpts.compatibility = PDFCompatibility.ACROBAT5;
+		saveOpts.generateThumbnails = true;
+		saveOpts.preserveEditability = true;
+		try {
+			app.activeDocument.saveAs(saveName, saveOpts);
+		} catch(err) {}
+	}
+
+} else {
+	alert("Please open the data document first!!", "warning");
+}
