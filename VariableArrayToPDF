@@ -1619,7 +1619,7 @@ if (app.documents.length > 0) {
 		var docRef = doc.artboards;
 		var numberAB = docRef.length;
 		var layerL = doc.layers.length;
-		var tempXY = -7000;
+		var tempXY = -6000;
 		for (var i = 1; i < layerL; i++) {
 			for (var j = 0; j < numberAB; j++) {
 				var activeArtboard = docRef[j];
