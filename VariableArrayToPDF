@@ -36,6 +36,10 @@ if (app.documents.length > 0) {
 		var savePDFCheck = true; // false  //true //Determine whether to save PDF files
 		var DocNameTime = false; // false  //true //Determine whether the PDF file has added the date and time
 		
+		var tempXY = 0; //If an error occurs on the array sketchboard, modify the value
+		//var tempXY = -6000; 
+		//var tempXY = -5000;
+		//var tempXY = -3000;
 		var folderPath = decodeURI(doc.path);
 		var paths = doc.path == '' ? "Document path: < unknown >": folderPath; 
 		var pdfPaths = paths + "/";
@@ -1619,10 +1623,7 @@ if (app.documents.length > 0) {
 		var docRef = doc.artboards;
 		var numberAB = docRef.length;
 		var layerL = doc.layers.length;
-		var tempXY = 0; //If an error occurs on the array sketchboard, modify the value
-		//var tempXY = -6000; 
-		//var tempXY = -5000;
-		//var tempXY = -3000;
+		
 		for (var i = 1; i < layerL; i++) {
 			for (var j = 0; j < numberAB; j++) {
 				var activeArtboard = docRef[j];
