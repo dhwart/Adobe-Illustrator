@@ -1619,7 +1619,7 @@ if (app.documents.length > 0) {
 		var docRef = doc.artboards;
 		var numberAB = docRef.length;
 		var layerL = doc.layers.length;
-		var tempXY = -6000; //If the array fails, you can modify the value
+		var tempXY = -6000; //If an error occurs on the array sketchboard, modify the value
 		//var tempXY = -5000;
 		//var tempXY = 0;
 		for (var i = 1; i < layerL; i++) {
