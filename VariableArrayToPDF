@@ -1620,6 +1620,8 @@ if (app.documents.length > 0) {
 		var numberAB = docRef.length;
 		var layerL = doc.layers.length;
 		var tempXY = -6000;
+		//var tempXY = -5000;
+		//var tempXY = 0;
 		for (var i = 1; i < layerL; i++) {
 			for (var j = 0; j < numberAB; j++) {
 				var activeArtboard = docRef[j];
