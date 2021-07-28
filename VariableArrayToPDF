@@ -10,7 +10,7 @@ by Dhwart
 3, add PDF file name date judgment (It can be turned on or off at code var DocNameTime = false;).
 */
 if (app.documents.length > 0) {
-	if (confirm('Please confirm: \n1, whether the template file has imported variable data; \n2, whether all objects have been selected to create group \n\n (hidden data layer must be visible)!', true, 'Export VariableArray to PDF v2.0 - (by Dhwart)    ')) {
+	if (confirm('Please confirm: \n1, whether the template file has imported variable data; \n2, whether all objects have been selected to create group \n\n (hidden data layer must be visible)!', true, 'VariableArrayToPDF v2.0 - (by Dhwart)    ')) {
 		//Get the current time
 		var myDate = new Date();
 		var year = myDate.getFullYear();
