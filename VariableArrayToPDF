@@ -2,12 +2,21 @@
 /*
 Script Name: VariableArrayToPDF 
 scriptVersion: 2.0
+Array the variable data to the artboard and save it as a PDF file
 2021.7
 by Dhwart
-
-1. Adjust the document ruler to mm.
-2. Modify the array artboard algorithm.
-3, add PDF file name date judgment (It can be turned on or off at code var DocNameTime = false;).
+ * 2021
+ * 
+ * *****************************************************************************
+ * Notes:
+ * 1. Graphs cannot use clipping mask operation
+ * 2. Graphs cannot be grouped in secondary groups
+ * =============================================================================
+ * update:
+ * 2021-07-28
+ * 1. Adjust the document ruler to mm.
+ * 2. Modify the array artboard algorithm.
+ * 3, add PDF file name date judgment (It can be turned on or off at code var DocNameTime = false;).
 */
 if (app.documents.length > 0) {
 	if (confirm('Please confirm: \n1,whether the template file has imported variable data;\n2,Document Graphs cannot use clipping mask command;\n3,whether all objects have been selected to create group \n\n (hidden data layer must be visible)!', true, 'VariableArrayToPDF v2.0 - (by Dhwart)    ')) {
