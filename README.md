@@ -1,8 +1,9 @@
 # Adobe-Illustrator
 Illustrator scripts
 
-*Illustrator variable making; Array to artboard,Export the SCRIPTS of PDF files
-*Illustrator 把变量数据阵列为每组数据一个画板，同时导出PDF文件。
+* Illustrator variable making; Array to artboard,Export the SCRIPTS of PDF files
+
+* Illustrator 把变量数据阵列为每组数据一个画板，同时导出PDF文件。
 
 ## VariableArrayToPDF.jsx
 
