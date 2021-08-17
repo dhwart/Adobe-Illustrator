@@ -2,4 +2,4 @@
 Illustrator scripts
 
 
-*Some useful scripts!!
+*Illustrator variable making; Array to artboard,Export the SCRIPTS of PDF files
